@@ -1,11 +1,20 @@
 import numpy as np
-
-X = np.load('npy_files/X.npy')
-y = np.load('npy_files/y.npy')
-
 import matplotlib.pyplot as plt
 
-emotions = {0:'neutral', 1:'angry', 2:'contempt', 3:'disgust', 4:'fear', 5:'happy', 6:'sad', 7:'surprise'}
+X = np.load('npy_files/X.npy')
+y8 = np.load('npy_files/y.npy')
+y = reindex_labels(y8)
+
+def reindex_labels(y8):
+    y = np.zeros(y8.shape, dtype=np.int8)
+    label_mapping = {0:6, 2:-1, 1:0, 3:1, 4:2, 5:3, 6:4, 7:5}
+    for i in range(0,len(y8)):
+        y[i] = label_mapping[y8[i]]
+
+    return y
+
+
+emotions = {0:'angry', 1:'disgust', 2:'fear', 3:'happy', 4:'sad', 5:'surprise', 6:'neutral'}
 
 for i in range(0,10):
     plt.xlabel(emotions[y[i]])

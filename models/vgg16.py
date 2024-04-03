@@ -1,3 +1,6 @@
+
+#IMPORTS ###############################
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -19,6 +22,8 @@ from skimage.transform import rescale, resize
 
 import pydot
 
+#PARAMETERS ##########################
+
 EPOCHS = 50
 BS = 128
 DROPOUT_RATE = 0.5
@@ -30,34 +35,53 @@ SGD_DECAY = 0.0001
 
 Resize_pixelsize = 197
 
-vgg16 = tf.keras.applications.VGG16(include_top=False, input_shape=(Resize_pixelsize, Resize_pixelsize, 3), pooling='avg')
+
+#MODEL ##############################""
+#create the base pre-trained resnet50 model
+    #include_top: include the top fully connected layer --> set to false
+    #weights: pre-training on imagenet
+    #input_shape: the shape of the input image
+
+vgg16 = tf.keras.applications.VGG16(include_top=False,weights='imagenet',input_shape=(Resize_pixelsize, Resize_pixelsize, 3), pooling='avg')
+#we take last_layer the output of our pre-trained model
 
 last_layer = vgg16.get_layer('pool5').output
+#add a flatten layer
 x = Flatten(name='flatten')(last_layer)
+#add a dropout layer 
+
 x = Dropout(DROPOUT_RATE)(x)
+
+#add a fully connected layer with the activation function relu
 x = Dense(4096, activation='relu', name='fc6')(x)
 x = Dropout(DROPOUT_RATE)(x)
 x = Dense(1024, activation='relu', name='fc7')(x)
 
+
+#freezing layers
 for i in range(FROZEN_LAYER_NUM):
     vgg16.layers[i].trainable = False
 
-print(vgg16.get_layer('pool5').trainable)
-
+#defining the output layer
+    #activation function: softmax
+    #7 units for the 7 classes
 out = Dense(7, activation='softmax', name='classifier')(x)
 
+#defining the final model to be trained
 model = Model(vgg16.input, out)
 
-
+#defining the optimizer
 optim = tf.keras.optimizers.Adam(lr=ADAM_LEARNING_RATE, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
 #optim = keras.optimizers.Adam(lr=0.0005, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
 sgd = tf.keras.optimizers.SGD(lr=SGD_LEARNING_RATE, momentum=0.9, decay=SGD_DECAY, nesterov=True)
 rlrop = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_acc',mode='max',factor=0.5, patience=10, min_lr=0.00001, verbose=1)
 
+#compiling
 model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
 
+# DATA PREPARATION ########################
 
-
+#create an ImageDataGenerator to generate batches of data
 def get_datagen(dataset, aug=False):
     if aug:
         datagen = ImageDataGenerator(
@@ -93,8 +117,10 @@ class_weights = class_weight.compute_class_weight('balanced',
                                                     np.unique(Y),
                                                     Y)
 
-history = model.fit_generator(
-    generator = train_generator,
+#TRAINING #############################
+
+history = model.fit(
+    x = train_generator,
     validation_data=dev_generator, 
     steps_per_epoch=28709// BS,
     validation_steps=3509 // BS,
@@ -104,33 +130,33 @@ history = model.fit_generator(
     use_multiprocessing=True,
 ) 
 
-print('\n# Evaluate on dev data')
+# print('\n# Evaluate on dev data')
 results_dev = model.evaluate_generator(dev_generator, 3509 // BS)
-print('dev loss, dev acc:', results_dev)
+# print('dev loss, dev acc:', results_dev)
 
-print('\n# Evaluate on test data')
+# print('\n# Evaluate on test data')
 results_test = model.evaluate_generator(test_generator, 3509 // BS)
-print('test loss, test acc:', results_test)
+# print('test loss, test acc:', results_test)
 
-# list all data in history
-print(history.history.keys())
-# summarize history for accuracy
-plt.plot(history.history['acc'])
-plt.plot(history.history['val_acc'])
-plt.title('model accuracy')
-plt.ylabel('accuracy')
-plt.xlabel('epoch')
-plt.legend(['train', 'dev'], loc='upper left')
-plt.show()
-# summarize history for loss
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.title('model loss')
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'dev'], loc='upper left')
-plt.show()
+# # list all data in history
+# print(history.history.keys())
+# # summarize history for accuracy
+# plt.plot(history.history['acc'])
+# plt.plot(history.history['val_acc'])
+# plt.title('model accuracy')
+# plt.ylabel('accuracy')
+# plt.xlabel('epoch')
+# plt.legend(['train', 'dev'], loc='upper left')
+# plt.show()
+# # summarize history for loss
+# plt.plot(history.history['loss'])
+# plt.plot(history.history['val_loss'])
+# plt.title('model loss')
+# plt.ylabel('loss')
+# plt.xlabel('epoch')
+# plt.legend(['train', 'dev'], loc='upper left')
+# plt.show()
 
 epoch_str = '-EPOCHS_' + str(EPOCHS)
 test_acc = 'test_acc_%.3f' % results_test[1]
-model.save('/content/drive/My Drive/cs230 project/models/' + 'VGG16' + epoch_str + test_acc + '.h5')
+model.save('VGG16' + epoch_str + test_acc + '.keras')
