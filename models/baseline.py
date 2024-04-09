@@ -49,7 +49,7 @@ model.add(BatchNormalization())
 model.add(Dense(7, activation='softmax',name='fcsoftmax'))
 
 #TODO: weight decay of 0.0001...initial learning rate is set to 0.01 and reduced by a factor of 2 at every 25 epoch
-sgd = SGD(lr=SGD_LEARNING_RATE,momentum=0.9, decay=SGD_DECAY, nesterov=True)
+sgd = SGD(learning_rate=SGD_LEARNING_RATE,momentum=0.9, decay=SGD_DECAY, nesterov=True)
 model.compile(loss='categorical_crossentropy',optimizer=sgd,metrics=['accuracy'])
 
 # checkpoint
