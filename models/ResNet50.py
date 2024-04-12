@@ -1,6 +1,6 @@
 
 #IMPORTS ###################
-
+# IMPORTS #############################################################################################################################################
 
 import numpy as np
 import pandas as pd
@@ -13,13 +13,9 @@ from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Flatten
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.optimizers import Adam, SGD
 from tensorflow.keras.callbacks import TensorBoard, ReduceLROnPlateau, EarlyStopping, Callback, LearningRateScheduler
-from sklearn.metrics import *
-
-import skimage
-from skimage.transform import rescale, resize
 
 
-import pydot
+
 
 # PARAMETERS ##########################################################################################################################################
 
@@ -33,18 +29,16 @@ epochs_top_layers   = 5
 epochs_all_layers   = 100
 batch_size          = 128
 
+# DATASETS ############################################################################################################################################
 
-#DATASET ############################################
-
-# Folder where logs and models are saved
-folder = 'C:/Users/Maryem/Desktop/P2M/logs/RESNET50'
+# Folder where logs and models are stored
+folder = 'C:/Users/skywalker/Desktop/Meriem_TAIEB_yasmine_MAHDOUI/facial_emotion_recognition/logs/RESNET50'
 
 # Data paths
-train_dataset	= 'C:/Users/Maryem/Desktop/fer2013/train'
-eval_dataset 	= 'C:/Users/Maryem/Desktop/fer2013/validation'
+train_dataset	= 'C:/Users/skywalker/Desktop/Meriem_TAIEB_yasmine_MAHDOUI/facial_emotion_recognition/fer2013/train'
+eval_dataset 	= 'C:/Users/skywalker/Desktop/Meriem_TAIEB_yasmine_MAHDOUI/facial_emotion_recognition/fer2013/validation'
 
-
-#MODEL ##########################################
+# MODEL ###############################################################################################################################################
 
 # Create the based on ResNet-50 architecture pre-trained model
     # model:        Selects one of the available architectures vgg16, resnet50 or senet50
@@ -79,10 +73,7 @@ predictions = Dense(num_classes, activation = 'softmax')(x)
 model = Model(inputs = base_model.input, outputs = predictions)
 # model.summary()
 
-# DATA PREPARATION ########################
-def custom_preprocessing(x):
-    x_reshaped = x.reshape(48,48)
-    return x_reshaped
+# DATA PREPARATION ####################################################################################################################################
 
 #create an ImageDataGenerator and generate batches of data
 def get_datagen(dataset, aug=False):
@@ -109,9 +100,6 @@ def get_datagen(dataset, aug=False):
 
 train_generator  = get_datagen(train_dataset, True)
 dev_generator    = get_datagen(eval_dataset)
-
-
-# TRAINING ###############################
 
 # UPPER LAYERS TRAINING ###############################################################################################################################
 
@@ -164,7 +152,6 @@ model.fit(
     validation_data     = dev_generator,
     callbacks           = [tensorboard_top_layers])
 
-
 # FULL NETWORK TRAINING ###############################################################################################################################
 
 # At this point, the top layers are well trained and we can start fine-tuning convolutional layers from ResNet-50
@@ -182,7 +169,7 @@ for layer in model.layers:
     # loss:     String (name of objective function) or objective function
     # metrics:  List of metrics to be evaluated by the model during training and testing
 model.compile(
-    optimizer   = SGD(learrning_rate = 1e-4, momentum = 0.9, decay = 0.0, nesterov = True),
+    optimizer   = SGD(learning_rate = 1e-4, momentum = 0.9, decay = 0.0, nesterov = True),
     loss        = 'categorical_crossentropy', 
     metrics     = ['accuracy'])
 
@@ -191,7 +178,6 @@ tensorboard_all_layers = TensorBoard(
     log_dir         = folder + '/logs_all_layers',
     histogram_freq  = 0,
     write_graph     = True,
-    write_grads     = False,
     write_images    = True)
 
 # Reduce learning rate when a metric has stopped improving
@@ -243,12 +229,11 @@ with file_io.FileIO('ResNet-50.keras', mode='rb') as input_f:
     with file_io.FileIO(folder + '/ResNet-50.keras', mode='wb') as output_f:  # w+ : writing and reading
         output_f.write(input_f.read())
 
-
 # print('\n# Evaluate on dev data')
 # results_dev = model.evaluate_generator(dev_generator, 3509 // BS)
-# print('dev loss, dev acc:', results_dev)
+# # print('dev loss, dev acc:', results_dev)
 
-# print('\n# Evaluate on test data')
+# # print('\n# Evaluate on test data')
 # results_test = model.evaluate_generator(test_generator, 3509 // BS)
 # print('test loss, test acc:', results_test)
 
@@ -270,3 +255,10 @@ with file_io.FileIO('ResNet-50.keras', mode='rb') as input_f:
 # plt.xlabel('epoch')
 # plt.legend(['train', 'dev'], loc='upper left')
 # plt.show()
+
+#SAVING THE TRAINED MODEL #################3
+
+
+# epoch_str = '-EPOCHS_' + str(EPOCHS)
+# test_acc = 'test_acc_%.3f' % results_test[1]
+# model.save('RESNET50' + epoch_str + test_acc + '.keras')
